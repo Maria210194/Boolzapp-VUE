@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+        integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- FONT -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@300;500&family=Montserrat:wght@200;300&display=swap" rel="stylesheet">    <!-- Css -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- VUE -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <link rel="icon" type="image/x-icon" href="img/favicon.png">
+    <title>Boolzapp</title>
+</head>
+<body>
+
+    <div id="root">
+        <div class="container flex">
+            <!-- left-container -->
+            <div class="contact-box">
+
+                <!-- user-info -->
+                <div class="user flex">
+                    <div>
+                        <img src="img/avatar_io.png" alt="User" class="avatar">
+                        <span class="user-name">Mary</span>
+                    </div>
+                    <div class="icons">
+                        <i class="fas fa-circle-notch icons-size"></i>
+                        <i class="fas fa-comment-alt icons-size"></i>
+                        <i class="fas fa-ellipsis-v icons-size"></i>
+                    </div>
+                </div>
+
+                <!-- desktop-notifications -->
+                <div class="desktop-notifications flex">
+                    <div class="circle-icon">
+                        <i class="fas fa-bell-slash icons-size"></i>
+                    </div>
+                    <div class="notifications">
+                        <p>Ricevi notifiche di nuovi messaggi</p>
+                        <a href="#">Attiva notifiche desktop</a>
+                    </div>
+                </div>
+
+                <!-- searchBar -->
+                <div class="searchBar flex">
+                    <div class="lens-icon">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <div class="input-search">
+                        <input class="search" @keyup="userSearch()" v-model="searchContact" type="text" placeholder="Cerca o inizia una nuova chat">
+                    </div>
+                </div>
+
+                <!-- contact-list -->
+                <div class="contacts-list flex">
+                    <div
+                    v-for="(contact, index) in filteredContacts"
+                    @click="selectContact(contact); setActive(index)"
+                    :class="(contact[index] == index) ? 'activeContact' : '' "
+                    v-if="contact.visible"
+                    class="contact-item"
+                    >
+                        <div>
+                            <img :src="getAvatar(contact.avatar)"  class="img-user">
+                        </div>
+                        <div class="single-user">
+                            <div class="users-info">
+                                <p class="users-name">{{contact.name}}</p>
+                                <p class="users-date">{{getLastMessageDate(contact)}}</p>
+                            </div>
+                            <div>
+                                <p class="users-last-message">{{maxTextLenght(getLastMessage(contact))}}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- right-container -->
+            <div class="chat-box" id="chatBox">
+
+                <!-- head-chat-container -->
+                <div class="head-chat flex">
+                    <div class="left-chat">
+                        <div>
+                            <img class="img-user" 
+                            :src="'img/avatar' + selectedContact.avatar + '.png'"
+                            :alt="selectedContact.name">
+                        </div>
+                        <div>
+                            <p class="users-name">{{selectedContact.name}}</p>
+                            <p class="users-date">Ultimo accesso alle {{getLastMessageDate(selectedContact)}}</p>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <i class="fas fa-magnifying-glass icons-size"></i>
+                        <i class="fas fa-paperclip icons-size"></i>
+                        <i class="fas fa-ellipsis-v icons-size"></i>
+                    </div>
+                </div>
+                
+                <!-- body-chat-container -->
+                <div class="chat">
+                    <div
+                    v-for="(message, index) in selectedContact.messages" 
+                    class="message"
+                    :class="message.status"
+                    >
+                    <div class="column">
+                        {{message.message}}
+                        <div class="message_more_icon"
+                        >
+                            <i @click.stop @click="showModal(message)" class="fas fa-ellipsis-v"></i>
+                        </div>
+                    </div>
+                        <p class="messageDate">{{getTime(message)}}</p>
+                        <div class="messageTool" v-if="message.toolShow">
+                            <div class="messageTool_content">
+                                <div class="messageTool_content_icon">
+                                    <i class="fa-solid fa-info"></i>
+                                </div>
+                                <div class="messageTool_content_text">
+                                    <p>Message Information</p>
+                                </div>
+                            </div>
+                            <div class="messageTool_content">
+                                <div class="messageTool_content_icon">
+                                    <i class="fa-solid fa-trash"></i> </div>
+                                <div class="messageTool_content_text" @click="deleteThisMessage(index)">
+                                    <p>Delete Message</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- write-chat-container -->
+                <div class="write-container">
+                    <div>
+                        <div class="input-group">
+                            <div  v-if="emojiSwitch" class="emoji" :class="{hg: emojiSwitch}">
+                                <div
+                                    class="single-emoji"
+                                    v-for="element in emoji"
+                                    @click="insertEmoji(element); emojiToggle()"
+                                    >
+                                {{element}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex">
+                          <span>
+                                <i
+                                @click="emojiToggle()"
+                                    class="fa-regular fa-face-smile text-secondary">
+                                </i>
+                            </span>
+                            <input
+                            v-model="chatMessage"
+                            @keyup.enter="sendMessage()"
+                            class="send"
+                            :class=""
+                            type="text"
+                            placeholder="Scrivi un messaggio"
+                            id="focus">
+                            <span>
+                                <i class="fa-solid fa-microphone"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+    
+
+    <script src="js/script.js" type="module"></script>
+</body>
+</html>
